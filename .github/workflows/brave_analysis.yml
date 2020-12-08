@@ -1,0 +1,80 @@
+name: Brave Analysis
+
+on:
+  push:
+    branches: [ main, dev ]
+
+jobs:
+  analysis:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      timeout-minutes: 1
+
+
+    - name: Set up Python 3
+      uses: actions/setup-python@v2
+      timeout-minutes: 5
+      with:
+        python-version: 3.x
+
+    - name: Setup pip cache
+      uses: actions/cache@v2
+      timeout-minutes: 5
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install poetry & others
+      run: python -m pip install poetry requests wheel
+
+    - name: Run Poetry
+      run: python -m poetry build
+
+    - name: Setup ghidra
+      run: |
+            Invoke-WebRequest "https://ghidra-sre.org/ghidra_9.2_PUBLIC_20201113.zip" -OutFile "ghidra.zip"
+            Expand-Archive -LiteralPath "ghidra.zip" -DestinationPath .
+            Move-Item -Force -Path ghidra_*_PUBLIC -Destination ghidra
+      shell: pwsh
+      timeout-minutes: 5
+
+    - name: Install brave
+      run: |
+            Set-PSDebug -Trace 1
+            Invoke-WebRequest "https://github.com/brave/brave-browser/releases/download/v1.18.70/BraveBrowserStandaloneSilentSetup.exe" -OutFile BraveBrowserStandaloneSilentSetup.exe
+            Start-Process -Wait -FilePath BraveBrowserStandaloneSilentSetup.exe
+      shell: pwsh
+      timeout-minutes: 5
+
+
+    - name: Locate brave dll
+      run: Get-Childitem –Path $env:LOCALAPPDATA/BraveSoftware -Include chrome.dll -Recurse -ErrorAction SilentlyContinue
+      shell: pwsh
+      timeout-minutes: 5
+
+
+    - name: Start Ghidra Analysis
+      run: |
+            $dll = Get-Childitem –Path $env:LOCALAPPDATA/BraveSoftware -Include chrome.dll -Recurse -ErrorAction SilentlyContinue | select -expand fullname
+            mkdir ProjectBrave
+            ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -import "$dll" -analysisTimeoutPerFile $(5 * 60 * 60)
+      shell: pwsh
+      timeout-minutes: 360
+
+    - name: Start Ghidra Script to extract patterns
+      run: |
+            $env:EXTRACT_DIRECTORY = $((Get-Item "ProjectBrave").FullName)
+            ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -noanalysis -overwrite -scriptPath "$((Get-Item .).FullName)" -postScript extract_functions_patterns.py
+      shell: pwsh
+      timeout-minutes: 360
+
+    - name: Create artifact
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: ghidra_analysis
+        path: ProjectBrave/
