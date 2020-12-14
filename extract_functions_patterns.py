@@ -47,7 +47,7 @@ def get_and_mark_bool_function_using_string(s, name=None):
     func = get_function_containing_string_ref(s)
     if name:
         func.setName(name, ghidra.program.model.symbol.SourceType.USER_DEFINED)
-    func.setReturn(ghidra.program.model.pattern_data.BooleanDataType.dataType,
+    func.setReturn(ghidra.program.model.data.BooleanDataType.dataType,
                    func.getReturn().getVariableStorage(),
                    ghidra.program.model.symbol.SourceType.USER_DEFINED)
 
