@@ -137,11 +137,11 @@ class InMemoryPatcher:
     def patch(self, content: bytes) -> PatcherResult:
         buff = BytesIO(content)
         patch_list = [
-            "patch_show_notification",
+            #"patch_show_notification",
             #"patch_should_allow",
             #"patch_all_should_allow",
             #"patch_should_exclude",
-            #"patch_should_pace",
+            "patch_should_pace",
             "patch_is_focus_assist_enabled",
             "patch_should_show_notifications"]
 
@@ -217,15 +217,15 @@ class InMemoryPatcher:
 
     @staticmethod
     def _return_x64() -> Tuple[Instruction, ...]:
-        return RET(), INT(3), INT(3), INT(3)
+        return RET()
 
     @staticmethod
     def _return_0_x64() -> Tuple[Instruction, ...]:
-        return XOR(rax, rax), TEST(al, al), RET(), INT(3), INT(3)
+        return XOR(rax, rax), RET()
 
     @staticmethod
     def _return_1_x64() -> Tuple[Instruction, ...]:
-        return MOV(al, 1), TEST(al, al), RET(), INT(3), INT(3), INT(3)
+        return MOV(rax, 1), RET()
 
     def patch_show_notification(self, buff: BytesIO, content: bytes):
         return self._std_patch("AdDelivery::ShowNotification", self._return_x64(), buff, content)
@@ -351,8 +351,15 @@ class Patcher:
         if self.data_repo.chrome_backup.exists() and self.data_repo.chrome_backup_json.exists():
             chrome_info = json.loads(self.data_repo.chrome_backup_json.read_text())
             path = chrome_info.get('path', '')
-            return chrome_dll.samefile(Path(path))
+            return chrome_dll.exists() and Path(path).exists() and chrome_dll.samefile(Path(path))
         return False
+
+    def restore_backup(self, chrome_dll: Path):
+        with tarfile.open(str(self.data_repo.chrome_backup)) as tar:
+            with self.data_repo.create_tmp_dir('extract') as tmp:
+                tar.extractall(tmp)
+                file = next(Path(tmp).rglob(chrome_dll.name))
+                shutil.move(file, str(chrome_dll))
 
     def patch(self, chrome_dll: Path):
         content = chrome_dll.read_bytes()

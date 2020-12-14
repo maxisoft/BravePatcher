@@ -1,7 +1,7 @@
+import json
 import os
 import platform
 import warnings
-import json
 from pathlib import Path
 from typing import Optional
 
@@ -67,23 +67,22 @@ except OSError:
 with open("patterns_3371496867352830167.json") as f:
     data = json.load(f)
 
-
 chrome_dll_in = sg.In(chrome_dll, key="chrome_dll", enable_events=True)
 chrome_file_browse = sg.FileBrowse("Browse for chrome.dll", target=chrome_dll_in.Key, initial_folder=chrome_dll.parent,
                                    file_types=(("Chromium dll", "chrome.dll"), ("Any", "*")))
-ok_btn = sg.Button('Ok', disabled=not Path(chrome_dll).exists(), focus=True, bind_return_key=True)
-cancel_btn = sg.Button('Cancel')
-
-def build_options() -> list:
-    pass
+ok_btn = sg.Button('Patch', disabled=not Path(chrome_dll).exists(), focus=True, bind_return_key=True)
+restore_btn = sg.Button('Restore', disabled=not Patcher(data).has_backup(Path(chrome_dll)))
+cancel_btn = sg.Button('Cancel', visible=False)
 
 layout = [
     [chrome_dll_in, chrome_file_browse],
     [sg.HorizontalSeparator()],
-    [ok_btn, cancel_btn],
+    [ok_btn, restore_btn, cancel_btn],
 ]
 
 window = sg.Window('Brave Patcher', layout)
+
+patcher = Patcher(data)
 
 
 def validate():
@@ -92,14 +91,23 @@ def validate():
     return True
 
 
+def update_btn_state():
+    ok_btn.update(disabled=not validate())
+    restore_btn.update(disabled=not patcher.has_backup(Path(chrome_dll_in.get())))
+
+
 while True:
     event, values = window.read()
     if event == sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
         break
     if event == "chrome_dll":
-        ok_btn.update(disabled=not validate())
-    if event == "Ok":
-        Patcher(data).patch(Path(chrome_dll_in.get()))
+        update_btn_state()
+    if event == "Patch":
+        patcher.patch(Path(chrome_dll_in.get()))
+        update_btn_state()
+    if event == "Restore":
+        patcher.restore_backup(Path(chrome_dll_in.get()))
+        update_btn_state()
     print('You entered ', values)
 
 window.close()
