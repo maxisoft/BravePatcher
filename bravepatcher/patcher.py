@@ -137,13 +137,15 @@ class InMemoryPatcher:
     def patch(self, content: bytes) -> PatcherResult:
         buff = BytesIO(content)
         patch_list = [
-            #"patch_show_notification",
-            #"patch_should_allow",
-            #"patch_all_should_allow",
-            #"patch_should_exclude",
-            "patch_should_pace",
+            "patch_show_notification",
+            "patch_should_allow",
+            "patch_all_should_allow",
+            "patch_should_exclude",
+            #"patch_should_pace",
             "patch_is_focus_assist_enabled",
-            "patch_should_show_notifications"]
+            #"patch_should_show_notifications",
+            "patch_initialize_toast_notifier"
+            ]
 
         segments = []
         errors = []
@@ -169,7 +171,7 @@ class InMemoryPatcher:
     def list_patterns(self) -> Iterable[str]:
         return self.pattern_data["patterns"].keys()
 
-    def _search_pattern(self, pattern_name: str, content: bytes):
+    def _search_pattern(self, pattern_name: str, content: bytes) -> re.Match:
         pattern_info = self.get_pattern(pattern_name)
         if pattern_info is None:
             raise PatchException(PatchError(pattern_name, "", "PatternNotFound", ""))
@@ -183,15 +185,16 @@ class InMemoryPatcher:
     def _write_instruction(self, instr: Instruction, buff: BytesIO, match: re.Match):
         return self._write_bytes(instr.encode(), buff, match)
 
-    def _write_instructions(self, instructions: Collection[Instruction], buff: BytesIO, match: re.Match):
+    def _write_instructions(self, instructions: Collection[Instruction], buff: BytesIO, match: re.Match, offset: int = 0):
         encoded = BytesIO()
         for instr in instructions:
             encoded.write(instr.encode())
-        return self._write_bytes(encoded.getvalue(), buff, match)
+        return self._write_bytes(encoded.getvalue(), buff, match, offset)
 
     @staticmethod
-    def _write_bytes(data: bytes, buff: BytesIO, match: re.Match):
+    def _write_bytes(data: bytes, buff: BytesIO, match: re.Match, offset: int = 0):
         start, end = match.span()
+        start += offset
         if len(data) > end - start:
             raise ValueError("too many bytes to write")
         buff.seek(start)
@@ -213,11 +216,11 @@ class InMemoryPatcher:
             self._write_instruction(op, buff, match)
         else:
             self._write_instructions(op, buff, match)
-        return [self._create_patched_segment(name, buff, match)]
+        return self._create_patched_segment(name, buff, match),
 
     @staticmethod
     def _return_x64() -> Tuple[Instruction, ...]:
-        return RET()
+        return RET(),
 
     @staticmethod
     def _return_0_x64() -> Tuple[Instruction, ...]:
@@ -228,7 +231,20 @@ class InMemoryPatcher:
         return MOV(rax, 1), RET()
 
     def patch_show_notification(self, buff: BytesIO, content: bytes):
-        return self._std_patch("AdDelivery::ShowNotification", self._return_x64(), buff, content)
+        #return self._std_patch("AdDelivery::ShowNotification", self._return_x64(), buff, content)
+        pattern_name = "AdDelivery::ShowNotification"
+        match = self._search_pattern(pattern_name, content)
+        pattern = "e9 ?? ?? ?? ??"
+        if "AdDelivery::ShowNotification->LastCall" in self.pattern_data:
+            pattern = self.pattern_data["AdDelivery::ShowNotification->LastCall"]["pattern"]
+        try:
+            search = MemorySearch(match.group(0))
+            sub_match = search.find_pattern(pattern)
+        except MemorySearchException as e:
+            raise PatchException(PatchError(pattern_name, pattern, type(e).__name__, traceback.format_exc(limit=15)))
+        op = self._return_x64()
+        self._write_instructions(op, buff, match, sub_match.span()[0])
+        return self._create_patched_segment(pattern_name, buff, match),
 
     def patch_should_allow(self, buff: BytesIO, content: bytes):
         return self._std_patch("ads::ShouldAllow", self._return_1_x64(), buff, content)
@@ -260,6 +276,9 @@ class InMemoryPatcher:
 
     def patch_should_show_notifications(self, buff: BytesIO, content: bytes):
         return self._std_patch("NotificationHelperWin::ShouldShowNotifications", self._return_1_x64(), buff, content)
+
+    def patch_initialize_toast_notifier(self, buff: BytesIO, content: bytes):
+        return self._std_patch("NotificationHelperWin::InitializeToastNotifier", self._return_0_x64(), buff, content)
 
 
 class DataRepository:
