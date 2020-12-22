@@ -533,3 +533,7 @@ MigrationBackup/
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,git,windows,visualstudiocode,visualstudio,linux,tortoisegit
 /dist
 /poetry.lock
+/build
+/gui.build
+/gui.dist
+/gui.spec
