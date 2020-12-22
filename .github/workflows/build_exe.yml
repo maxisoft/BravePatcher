@@ -19,6 +19,13 @@ jobs:
       with:
         python-version: 3.8
 
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+      with:
+        vs-version: '16.8'
+
+    - uses: ilammy/msvc-dev-cmd@v1
+
     - name: Setup pip cache
       uses: actions/cache@v2
       timeout-minutes: 5
@@ -32,25 +39,18 @@ jobs:
       run: python -m pip install poetry requests wheel
 
     - name: Run Poetry
-      run: python -m poetry build
-
-    - name: Install brave
       run: |
-            Set-PSDebug -Trace 1
-            Invoke-WebRequest "https://github.com/brave/brave-browser/releases/download/v1.18.70/BraveBrowserStandaloneSilentSetup.exe" -OutFile BraveBrowserStandaloneSilentSetup.exe
-            Start-Process -Wait -FilePath BraveBrowserStandaloneSilentSetup.exe
-      shell: pwsh
-      timeout-minutes: 5
-
+            python -m poetry install
+            python -m poetry build
 
     - name: Install nuitka & pyinstaller
-      run: poetry run python -m pip install nuitka pyinstaller
-
-    - name: Buid exe using nuitka
-      run: poetry run python -m nuitka --standalone --plugin-enable=tk-inter --windows-disable-console --windows-company-name=maxisoft --windows-product-version=0.1.0.0 --onefile bravepatcher/gui.py
+      run: poetry run pip install nuitka pyinstaller pywin32 py2exe
 
     - name: Buid exe using pyinstaller
-      run: poetry run python -m pyinstaller -F bravepatcher/gui.py
+      run: poetry run pyinstaller -F bravepatcher/gui.py
+
+    - name: Buid exe using pyinstaller
+      run: poetry run build_exe bravepatcher/gui.py
 
 
     - name: Create artifact
