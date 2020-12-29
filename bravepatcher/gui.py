@@ -221,8 +221,8 @@ def on_patch(window: sg.Window):
                 kill_all_brave(get_brave_for_chrome_dll(chrome_dll_path))
             patcher.patch(chrome_dll_path, patch_list)
         except Exception as e:
-            window.write_event_value("request_error_display", f"{e}")
             update_status_text(f"✖ Failed to patch with exception {type(e).__name__}", text_color="orange")
+            window.write_event_value("request_error_display", f"{e}")
         else:
             update_status_text("✅ Brave patched")
         finally:
