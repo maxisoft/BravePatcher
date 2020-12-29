@@ -1,15 +1,16 @@
 import re
 import traceback
 from io import BytesIO
-from typing import Optional, Iterable, Collection, Union, Tuple
+from typing import Iterable, Collection, Union, Tuple
+from dataclasses import asdict
 
 from peachpy.x86_64 import RET, XOR, rax, MOV
 from peachpy.x86_64.instructions import Instruction
 
+from .MemorySearch import MemorySearch
 from .exceptions import *
 from .models import *
-from .MemorySearch import MemorySearch
-from ..pattern import PatternData
+from ..pattern import PatternData, Pattern
 
 
 class InMemoryPatcher:
@@ -48,22 +49,21 @@ class InMemoryPatcher:
         patched = buff.getvalue()
         return PatcherResult(patched, content, segments, errors)
 
-    def get_pattern(self, name: str) -> Optional[dict]:
-        return self.pattern_data.x64.get(name)
+    def get_pattern(self, name: str) -> Optional[Pattern]:
+        return self.pattern_data.patterns.get(name)
 
     def list_patterns(self) -> Iterable[str]:
-        return self.pattern_data.x64.keys()
+        return self.pattern_data.patterns.keys()
 
     def _search_pattern(self, pattern_name: str, content: bytes) -> re.Match:
-        pattern_info = self.get_pattern(pattern_name)
-        if pattern_info is None:
+        pattern = self.get_pattern(pattern_name)
+        if pattern is None:
             raise PatchException(PatchError(pattern_name, "", "PatternNotFound", ""))
-        pattern = pattern_info["pattern"]
         try:
             search = MemorySearch(content)
             return search.find_pattern(pattern)
         except MemorySearchException as e:
-            raise PatchException(PatchError(pattern_name, pattern, type(e).__name__, traceback.format_exc(limit=15)))
+            raise PatchException(PatchError(pattern_name, pattern.pattern, type(e).__name__, traceback.format_exc(limit=15)))
 
     def _write_instruction(self, instr: Instruction, buff: BytesIO, match: re.Match):
         return self._write_bytes(instr.encode(), buff, match)
@@ -88,7 +88,7 @@ class InMemoryPatcher:
         buff.seek(match.start())
         patched_bytes = buff.read(match.end() - match.start())
         return PatchedSegment(name=name,
-                              pattern=self.get_pattern(name),
+                              pattern=asdict(self.get_pattern(name)),
                               patched_bytes=patched_bytes,
                               original_bytes=match.group(0),
                               start_address=match.start()
@@ -125,7 +125,7 @@ class InMemoryPatcher:
             for pattern in self.list_patterns():
                 if not pattern.endswith(":ShouldAllow"):
                     continue
-                if pattern == "ads::ShouldAllow": # already handled by patch_should_allow()
+                if pattern == "ads::ShouldAllow":  # already handled by patch_should_allow()
                     continue
                 try:
                     match = self._search_pattern(pattern, content)
