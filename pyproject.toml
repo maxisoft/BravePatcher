@@ -4,20 +4,21 @@ license = "MIT"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-authors = ["maxisoft <maxisoft.eu@gmail.com>"]
+authors = ["maxisoft <maxisoft.eu+github@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "<3.10,>=3.7"
-PeachPy = { git = "https://github.com/Maratyszcza/PeachPy" }
 PySimpleGUI = "<5, >=4.32.1"
 appdirs = ">=1.4.4"
 psutil = ">=5.8.0, <6.0.0"
+typer = ">=0.3.2, <0.4.0"
 
 [tool.poetry.scripts]
-bravepatcher = "bravepatcher.main:main"
+bravepatcher = "bravepatcher.cli:main"
 
 [tool.poetry.dev-dependencies]
 py2exe = "0.10.1.0"
+PeachPy = { git = "https://github.com/Maratyszcza/PeachPy" }
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

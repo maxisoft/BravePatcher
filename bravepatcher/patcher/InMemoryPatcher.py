@@ -9,10 +9,11 @@ from peachpy.x86_64.instructions import Instruction
 from .exceptions import *
 from .models import *
 from .MemorySearch import MemorySearch
+from ..pattern import PatternData
 
 
 class InMemoryPatcher:
-    def __init__(self, pattern_data: dict):
+    def __init__(self, pattern_data: PatternData):
         self.pattern_data = pattern_data
 
     def patch(self, content: bytes, patch_list=None) -> PatcherResult:
@@ -48,10 +49,10 @@ class InMemoryPatcher:
         return PatcherResult(patched, content, segments, errors)
 
     def get_pattern(self, name: str) -> Optional[dict]:
-        return self.pattern_data["patterns"].get(name)
+        return self.pattern_data.x64.get(name)
 
     def list_patterns(self) -> Iterable[str]:
-        return self.pattern_data["patterns"].keys()
+        return self.pattern_data.x64.keys()
 
     def _search_pattern(self, pattern_name: str, content: bytes) -> re.Match:
         pattern_info = self.get_pattern(pattern_name)

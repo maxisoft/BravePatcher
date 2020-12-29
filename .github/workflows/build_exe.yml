@@ -43,15 +43,11 @@ jobs:
             python -m poetry install
             python -m poetry build
 
-    - name: Install nuitka & pyinstaller
-      run: poetry run pip install nuitka pyinstaller pywin32 py2exe
+    - name: Install pyinstaller
+      run: poetry run pip install pyinstaller
 
-    - name: Buid exe using pyinstaller
-      run: poetry run pyinstaller -F bravepatcher/gui.py
-
-    - name: Buid exe using pyinstaller
-      run: poetry run build_exe bravepatcher/gui.py
-
+    - name: Build exe using pyinstaller
+      run: poetry run pyinstaller bravepatcher/gui.py
 
     - name: Create artifact
       uses: actions/upload-artifact@v2
@@ -59,9 +55,3 @@ jobs:
       with:
         name: dist
         path: '*dist/'
-
-    - name: Create artifact for json file
-      uses: actions/upload-artifact@v2
-      with:
-        name: gui_dist
-        path: gui.dist/

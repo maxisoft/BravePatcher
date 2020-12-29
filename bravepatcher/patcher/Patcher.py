@@ -10,11 +10,12 @@ from typing import Tuple, Optional
 
 from ..DataRepository import DataRepository
 from .InMemoryPatcher import InMemoryPatcher
+from ..pattern import PatternData
 from ..utils.DefaultJsonEncoder import DefaultJsonEncoder
 
 
 class Patcher:
-    def __init__(self, pattern_data: dict, data_repo: Optional[DataRepository] = None):
+    def __init__(self, pattern_data: PatternData, data_repo: Optional[DataRepository] = None):
         self.pattern_data = pattern_data
         self.data_repo = data_repo or DataRepository()
 
@@ -92,3 +93,5 @@ class Patcher:
                 shutil.move(tar_path, self.data_repo.chrome_backup)
         else:
             apply_patch()
+
+        return result

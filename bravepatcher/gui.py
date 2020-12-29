@@ -15,6 +15,7 @@ import PySimpleGUI as sg
 
 from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
+from bravepatcher.pattern import PatternData
 from bravepatcher.utils import explorer_open_folder
 from bravepatcher.utils.brave import get_brave_path, find_chrome_dll, kill_all_brave, get_brave_for_chrome_dll
 
@@ -26,7 +27,7 @@ except OSError:
 data_repo = DataRepository()
 
 with open("patterns_3372133802865133559.json") as f:
-    data = json.load(f)
+    data = PatternData.from_dict(json.load(f))
 
 patcher = Patcher(data, data_repo)
 
