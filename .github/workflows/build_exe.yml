@@ -41,6 +41,7 @@ jobs:
     - name: Run Poetry
       run: |
             python -m poetry install
+            python -m poetry run python generate_static_data.py
             python -m poetry build
 
     - name: Install pyinstaller
