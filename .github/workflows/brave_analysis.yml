@@ -136,7 +136,7 @@ jobs:
         git checkout -b pattern --track origin/pattern || git checkout --orphan pattern
         git reset --hard origin/pattern
         $sd = "${{ env.BRAVE_MAJOR_VERSION }}"
-        New-Item -Path "windows-x64/$sd" -ItemType Directory
+        New-Item -Path "windows-x64/$sd" -ItemType Directory -ErrorAction SilentlyContinue
         Copy-Item "$prev/ProjectBrave/*.json" "windows-x64/$sd/$v.json" -Verbose
         git add *
         $commit_message="Ghidra analysis for $v
