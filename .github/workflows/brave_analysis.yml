@@ -114,8 +114,7 @@ jobs:
         name: ghidra_analysis_json
         path: ProjectBrave/*.json
 
-    - name: Update gen branch
-      id: update_gen_branch
+    - name: Update pattern branch
       timeout-minutes: 3
       run: |
         Set-PSDebug -Trace 1
@@ -150,7 +149,7 @@ jobs:
       shell: pwsh
 
     - name: Push changes to remote gen branch
-      uses: ad-m/github-push-action@master
+      uses: ad-m/github-push-action@b007e7b818e33b04afd056e4c4b57ba917145d7a
       if: success() && ${{ !env.COMMIT_FAIL }}
       timeout-minutes: 2
       with:
