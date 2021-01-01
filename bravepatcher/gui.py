@@ -4,6 +4,7 @@
 import functools
 import json
 import platform
+import sys
 import warnings
 from collections import defaultdict
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -292,10 +293,16 @@ def on_stop_brave(window):
         sg.popup_error(f"{e}", keep_on_top=True, modal=True)
 
 
-def main():
-    if platform.system() == "Windows":
+def _remove_windows_console(force: bool = False):
+    """Remove the attached console window.
+     Initially intended for a nuitka build"""
+    if force or (platform.system() == "Windows" and Path(sys.argv[0]).name != "python.exe"):
         from ctypes import windll
-        windll.kernel32.FreeConsole()
+        return windll.kernel32.FreeConsole()
+
+
+def main():
+    _remove_windows_console()
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Cancel', 'Exit'):
