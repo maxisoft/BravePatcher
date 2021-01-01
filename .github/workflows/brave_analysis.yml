@@ -4,156 +4,165 @@ on:
   push:
     branches: [ main, dev ]
   schedule:
-    - cron:  '11 */11 * * *'
+    - cron: '11 */8 * * *'
 jobs:
   analysis-windows-x64:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
-      timeout-minutes: 1
+      - uses: actions/checkout@v2
+        timeout-minutes: 1
 
 
-    - name: Set up Python 3
-      uses: actions/setup-python@v2
-      timeout-minutes: 5
-      with:
-        python-version: 3.x
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        timeout-minutes: 5
+        with:
+          python-version: 3.x
 
-    - name: Setup pip cache
-      uses: actions/cache@v2
-      timeout-minutes: 5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Setup pip cache
+        uses: actions/cache@v2
+        timeout-minutes: 5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: Install poetry & others
-      run: python -m pip install poetry requests wheel
+      - name: Install poetry & others
+        run: python -m pip install poetry requests wheel
 
-    - name: Run Poetry
-      run: |
-            python -m poetry install
-            python -m poetry run python generate_static_data.py
-            python -m poetry build
+      - name: Run Poetry
+        run: |
+          python -m poetry install
+          python -m poetry run python generate_static_data.py
+          python -m poetry build
 
-    - name: Setup ghidra
-      run: |
-            Invoke-WebRequest "https://ghidra-sre.org/ghidra_9.2_PUBLIC_20201113.zip" -OutFile "ghidra.zip"
-            Expand-Archive -LiteralPath "ghidra.zip" -DestinationPath .
-            Move-Item -Force -Path ghidra_*_PUBLIC -Destination ghidra
-      shell: pwsh
-      timeout-minutes: 5
+      - name: Setup ghidra
+        run: |
+          Invoke-WebRequest "https://ghidra-sre.org/ghidra_9.2.1_PUBLIC_20201215.zip" -OutFile "ghidra.zip"
+          Expand-Archive -LiteralPath "ghidra.zip" -DestinationPath .
+          Move-Item -Force -Path ghidra_*_PUBLIC -Destination ghidra
+        shell: pwsh
+        timeout-minutes: 5
 
-    - name: Install brave
-      run: |
-            Set-PSDebug -Trace 1
-            python -m poetry run python bravepatcher/cli.py download-brave BraveBrowserStandaloneSilentSetup.exe
-            Start-Process -Wait -FilePath BraveBrowserStandaloneSilentSetup.exe
-      shell: pwsh
-      timeout-minutes: 5
-
-
-    - name: Locate brave dll
-      run: |
-            $dll = Get-Childitem -Path "$env:LOCALAPPDATA/BraveSoftware" -Include chrome.dll -Recurse -ErrorAction SilentlyContinue | select -expand fullname
-            echo $dll
-            $v = (Get-Item $dll).VersionInfo.FileVersion
-            $mv = $v.Split(".")[0..2] | Join-String -Separator "."
-            echo "BRAVE_DLL=$dll" >> $env:GITHUB_ENV
-            echo "BRAVE_VERSION=$v" >> $env:GITHUB_ENV
-            echo "BRAVE_MAJOR_VERSION=$mv" >> $env:GITHUB_ENV
-      shell: pwsh
-      timeout-minutes: 5
-
-    - name: Checks already analysed
-      run: |
-        $v = "${{ env.BRAVE_VERSION }}"
-        $mv = "${{ env.BRAVE_MAJOR_VERSION }}"
-        $url = "https://raw.githubusercontent.com/${{github.repository}}/pattern/windows-x64/$mv/$v.json"
-        try
-        {
-          Invoke-WebRequest -Uri "$url" -ErrorAction Stop
-        }
-        catch
-        {
-          exit
-        }
-        echo "ALREADY_ANALYSED=1" >> $env:GITHUB_ENV
-      shell: pwsh
-      timeout-minutes: 5
+      - name: Install brave
+        run: |
+          Set-PSDebug -Trace 1
+          python -m poetry run python bravepatcher/cli.py download-brave BraveBrowserStandaloneSilentSetup.exe
+          Start-Process -Wait -FilePath BraveBrowserStandaloneSilentSetup.exe
+        shell: pwsh
+        timeout-minutes: 5
 
 
-    - name: Start Ghidra Analysis
-      if: success() && ${{ github.event_name != 'schedule' || !env.ALREADY_ANALYSED }}
-      run: |
-            $dll = (Get-Item $env:BRAVE_DLL).FullName
-            mkdir ProjectBrave
-            ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -import "$dll" -analysisTimeoutPerFile $(5 * 60 * 60)
-      shell: pwsh
-      timeout-minutes: 360
+      - name: Locate brave dll
+        run: |
+          $dll = Get-Childitem -Path "$env:LOCALAPPDATA/BraveSoftware" -Include chrome.dll -Recurse -ErrorAction SilentlyContinue | select -expand fullname
+          echo $dll
+          $v = (Get-Item $dll).VersionInfo.FileVersion
+          $mv = $v.Split(".")[0..2] | Join-String -Separator "."
+          echo "BRAVE_DLL=$dll" >> $env:GITHUB_ENV
+          echo "BRAVE_VERSION=$v" >> $env:GITHUB_ENV
+          echo "BRAVE_MAJOR_VERSION=$mv" >> $env:GITHUB_ENV
+        shell: pwsh
+        timeout-minutes: 5
 
-    - name: Start Ghidra Script to extract patterns
-      if: success() && ${{ github.event_name != 'schedule' || !env.ALREADY_ANALYSED }}
-      run: |
-            $env:EXTRACT_DIRECTORY = $((Get-Item "ProjectBrave").FullName)
-            ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -noanalysis -overwrite -scriptPath "$((Get-Item .).FullName)" -postScript extract_functions_patterns.py
-      shell: pwsh
-      timeout-minutes: 360
+      - name: Checks already analysed
+        run: |
+          $v = "${{ env.BRAVE_VERSION }}"
+          $mv = "${{ env.BRAVE_MAJOR_VERSION }}"
+          $url = "https://raw.githubusercontent.com/${{github.repository}}/pattern/windows-x64/$mv/$v.json"
+          try
+          {
+            Invoke-WebRequest -Uri "$url" -ErrorAction Stop
+          }
+          catch
+          {
+            echo "ALREADY_ANALYSED=" >> $env:GITHUB_ENV
+            exit
+          }
+          echo "ALREADY_ANALYSED=1" >> $env:GITHUB_ENV
+        shell: pwsh
+        timeout-minutes: 5
 
-    - name: Create artifact
-      uses: actions/upload-artifact@v2
-      if: always()
-      with:
-        name: ghidra_analysis
-        path: ProjectBrave/
 
-    - name: Create artifact for json file
-      uses: actions/upload-artifact@v2
-      with:
-        name: ghidra_analysis_json
-        path: ProjectBrave/*.json
+      - name: Debug event_name
+        run: |
+          echo ${{ github.event_name }}
+          echo ${{ github.event_name != 'schedule' }} || ${{ env.ALREADY_ANALYSED != '1' }}
+          echo ${{ github.event_name != 'schedule' || env.ALREADY_ANALYSED != '1' }}
 
-    - name: Update pattern branch
-      timeout-minutes: 3
-      run: |
-        Set-PSDebug -Trace 1
-        if (-Not (Test-Path ./ProjectBrave/*.json))
-        {
-          echo "No json analysis file found"
-          exit
-        }
-        $pattern_dir=New-TemporaryFile | %{ rm $_; mkdir $_ }
-        $v = $env:BRAVE_VERSION
-        $prev = (Get-Item ".").FullName
-        echo "gen_dir=$pattern_dir" >> $env:GITHUB_ENV
-        pushd $pattern_dir
-        git init
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git remote add origin https://github.com/${{github.repository}}.git
-        git fetch origin
-        git checkout -b pattern --track origin/pattern || git checkout --orphan pattern
-        git reset --hard origin/pattern
-        $sd = "${{ env.BRAVE_MAJOR_VERSION }}"
-        New-Item -Path "windows-x64/$sd" -ItemType Directory -ErrorAction SilentlyContinue
-        Copy-Item "$prev/ProjectBrave/*.json" "windows-x64/$sd/$v.json" -Verbose
-        git add *
-        $commit_message="Ghidra analysis for $v
-        commit for run#${{ github.run_id }} using github actions"
-        git commit --dry-run -am "$commit_message" &&
-        echo "COMMIT_FAIL=" >> $env:GITHUB_ENV ||
-        echo "COMMIT_FAIL=1" >> $env:GITHUB_ENV
-        git commit -am "$commit_message"
-        popd
-      shell: pwsh
 
-    - name: Push changes to remote gen branch
-      uses: ad-m/github-push-action@b007e7b818e33b04afd056e4c4b57ba917145d7a
-      if: success() && ${{ !env.COMMIT_FAIL }}
-      timeout-minutes: 2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: pattern
-        directory: ${{ env.gen_dir }}
+      - name: Start Ghidra Analysis
+        if: ${{ github.event_name != 'schedule' || env.ALREADY_ANALYSED != '1' }}
+        run: |
+          $dll = (Get-Item $env:BRAVE_DLL).FullName
+          mkdir ProjectBrave
+          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -import "$dll" -analysisTimeoutPerFile $(5 * 60 * 60)
+        shell: pwsh
+        timeout-minutes: 360
+
+      - name: Start Ghidra Script to extract patterns
+        if: ${{ github.event_name != 'schedule' || env.ALREADY_ANALYSED != '1' }}
+        run: |
+          $env:EXTRACT_DIRECTORY = $((Get-Item "ProjectBrave").FullName)
+          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -noanalysis -overwrite -scriptPath "$((Get-Item .).FullName)" -postScript extract_functions_patterns.py
+        shell: pwsh
+        timeout-minutes: 360
+
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: ghidra_analysis
+          path: ProjectBrave/
+
+      - name: Create artifact for json file
+        uses: actions/upload-artifact@v2
+        with:
+          name: ghidra_analysis_json
+          path: ProjectBrave/*.json
+
+      - name: Update pattern branch
+        timeout-minutes: 3
+        run: |
+          Set-PSDebug -Trace 1
+          if (-Not (Test-Path ./ProjectBrave/*.json))
+          {
+            echo "No json analysis file found"
+            echo "COMMIT_FAIL=1" >> $env:GITHUB_ENV
+            exit
+          }
+          $pattern_dir=New-TemporaryFile | %{ rm $_; mkdir $_ }
+          $v = $env:BRAVE_VERSION
+          $prev = (Get-Item ".").FullName
+          echo "gen_dir=$pattern_dir" >> $env:GITHUB_ENV
+          pushd $pattern_dir
+          git init
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git remote add origin https://github.com/${{github.repository}}.git
+          git fetch origin
+          git checkout -b pattern --track origin/pattern || git checkout --orphan pattern
+          git reset --hard origin/pattern
+          $sd = "${{ env.BRAVE_MAJOR_VERSION }}"
+          New-Item -Path "windows-x64/$sd" -ItemType Directory -ErrorAction SilentlyContinue
+          Copy-Item "$prev/ProjectBrave/*.json" "windows-x64/$sd/$v.json" -Verbose
+          git add *
+          $commit_message="Ghidra analysis for $v
+          commit for run#${{ github.run_id }} using github actions"
+          git commit --dry-run -am "$commit_message" &&
+          echo "COMMIT_FAIL=" >> $env:GITHUB_ENV ||
+          echo "COMMIT_FAIL=1" >> $env:GITHUB_ENV
+          git commit -am "$commit_message"
+          popd
+        shell: pwsh
+
+      - name: Push changes to remote gen branch
+        uses: ad-m/github-push-action@b007e7b818e33b04afd056e4c4b57ba917145d7a
+        if: ${{ env.COMMIT_FAIL != '1' }}
+        timeout-minutes: 2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: pattern
+          directory: ${{ env.gen_dir }}
