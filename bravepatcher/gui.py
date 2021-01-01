@@ -293,10 +293,14 @@ def on_stop_brave(window):
         sg.popup_error(f"{e}", keep_on_top=True, modal=True)
 
 
+def _is_nuitka():
+    return "__compiled__" in globals()
+
+
 def _remove_windows_console(force: bool = False):
     """Remove the attached console window.
      Initially intended for a nuitka build"""
-    if force or (platform.system() == "Windows" and Path(sys.argv[0]).name != "python.exe"):
+    if force or (platform.system() == "Windows" and (_is_nuitka() or Path(sys.argv[0]).name != "python.exe")):
         from ctypes import windll
         return windll.kernel32.FreeConsole()
 
