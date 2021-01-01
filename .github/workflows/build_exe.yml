@@ -44,8 +44,11 @@ jobs:
             python -m poetry run python generate_static_data.py
             python -m poetry build
 
-    - name: Install pyinstaller
-      run: poetry run pip install pyinstaller
+    - name: Install nuitka & pyinstaller
+      run: poetry run python -m pip install nuitka pyinstaller pywin32
+
+    - name: Buid exe using nuitka
+      run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads bravepatcher/gui.py
 
     - name: Build exe using pyinstaller
       run: poetry run pyinstaller bravepatcher/gui.py

@@ -300,7 +300,7 @@ def main():
 
         event_handler.helper.dispatch(event, event, values, window)
 
-    executor.shutdown(True, cancel_futures=True)
+    executor.shutdown(True)
     window.close()
 
 
