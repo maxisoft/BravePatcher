@@ -4,18 +4,17 @@ from io import BytesIO
 from typing import Iterable, Collection, Union, Tuple
 from dataclasses import asdict
 
-from peachpy.x86_64 import RET, XOR, rax, MOV
-from peachpy.x86_64.instructions import Instruction
-
 from .MemorySearch import MemorySearch
 from .exceptions import *
 from .models import *
 from ..pattern import PatternData, Pattern
+from ..static_data import X64InstructionsData, x64_instructions as default_x64_instructions
 
 
 class InMemoryPatcher:
-    def __init__(self, pattern_data: PatternData):
+    def __init__(self, pattern_data: PatternData, x64_instructions: Optional[X64InstructionsData] = None):
         self.pattern_data = pattern_data
+        self.x64_instructions = x64_instructions or default_x64_instructions
 
     def patch(self, content: bytes, patch_list=None) -> PatcherResult:
         buff = BytesIO(content)
@@ -65,16 +64,6 @@ class InMemoryPatcher:
         except MemorySearchException as e:
             raise PatchException(PatchError(pattern_name, pattern.pattern, type(e).__name__, traceback.format_exc(limit=15)))
 
-    def _write_instruction(self, instr: Instruction, buff: BytesIO, match: re.Match):
-        return self._write_bytes(instr.encode(), buff, match)
-
-    def _write_instructions(self, instructions: Collection[Instruction], buff: BytesIO, match: re.Match,
-                            offset: int = 0):
-        encoded = BytesIO()
-        for instr in instructions:
-            encoded.write(instr.encode())
-        return self._write_bytes(encoded.getvalue(), buff, match, offset)
-
     @staticmethod
     def _write_bytes(data: bytes, buff: BytesIO, match: re.Match, offset: int = 0):
         start, end = match.span()
@@ -94,25 +83,19 @@ class InMemoryPatcher:
                               start_address=match.start()
                               )
 
-    def _std_patch(self, name: str, op: Union[Instruction, Collection[Instruction]], buff: BytesIO, content: bytes):
+    def _std_patch(self, name: str, op: bytes, buff: BytesIO, content: bytes):
         match = self._search_pattern(name, content)
-        if isinstance(op, Instruction):
-            self._write_instruction(op, buff, match)
-        else:
-            self._write_instructions(op, buff, match)
+        self._write_bytes(op, buff, match)
         return self._create_patched_segment(name, buff, match),
 
-    @staticmethod
-    def _return_x64() -> Tuple[Instruction, ...]:
-        return RET(),
+    def _return_x64(self):
+        return self.x64_instructions.return_nop
 
-    @staticmethod
-    def _return_0_x64() -> Tuple[Instruction, ...]:
-        return XOR(rax, rax), RET()
+    def _return_0_x64(self):
+        return self.x64_instructions.return_0
 
-    @staticmethod
-    def _return_1_x64() -> Tuple[Instruction, ...]:
-        return MOV(rax, 1), RET()
+    def _return_1_x64(self):
+        return self.x64_instructions.return_1
 
     def patch_show_notification(self, buff: BytesIO, content: bytes):
         return self._std_patch("AdDelivery::ShowNotification", self._return_x64(), buff, content)
@@ -129,7 +112,7 @@ class InMemoryPatcher:
                     continue
                 try:
                     match = self._search_pattern(pattern, content)
-                    self._write_instructions(self._return_1_x64(), buff, match)
+                    self._write_bytes(self._return_1_x64(), buff, match)
                     yield self._create_patched_segment(pattern, buff, match)
                 except PatchException as e:
                     yield e
