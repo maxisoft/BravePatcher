@@ -293,6 +293,9 @@ def on_stop_brave(window):
 
 
 def main():
+    if platform.system() == "Windows":
+        from ctypes import windll
+        windll.kernel32.FreeConsole()
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Cancel', 'Exit'):

@@ -47,15 +47,32 @@ jobs:
     - name: Install nuitka & pyinstaller
       run: poetry run python -m pip install nuitka pyinstaller pywin32
 
-    - name: Buid exe using nuitka
+    - name: Buid gui.exe using nuitka
       run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads bravepatcher/gui.py
+
+    - name: Buid cli.exe using nuitka
+      run: poetry run python -m nuitka --onefile --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads bravepatcher/cli.py
 
     - name: Build exe using pyinstaller
       run: poetry run pyinstaller bravepatcher/gui.py
 
-    - name: Create artifact
+    - name: Create dist artifact
       uses: actions/upload-artifact@v2
       if: always()
       with:
         name: dist
         path: '*dist/'
+
+    - name: Create gui artifact
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: gui
+        path: 'gui.exe'
+
+    - name: Create cli artifact
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: cli
+        path: 'cli.exe'
