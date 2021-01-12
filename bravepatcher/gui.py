@@ -3,6 +3,7 @@
 
 import functools
 import json
+import os
 import platform
 import sys
 import warnings
@@ -17,8 +18,9 @@ import PySimpleGUI as sg
 from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
 from bravepatcher.pattern import PatternData
-from bravepatcher.utils import explorer_open_folder
+from bravepatcher.utils import open_folder_in_explorer
 from bravepatcher.utils.brave import get_brave_path, find_chrome_dll, kill_all_brave, get_brave_for_chrome_dll
+from bravepatcher.static_data import default_pattern_data
 
 try:
     chrome_dll = find_chrome_dll(get_brave_path())
@@ -27,8 +29,13 @@ except OSError:
 
 data_repo = DataRepository()
 
-with open("patterns_3372133802865133559.json") as f:
-    data = PatternData.from_dict(json.load(f))
+pattern_file = os.environ.get("BRAVE_PATTERN_FILE", "brave_patterns.json")
+if Path(pattern_file).exists():
+    with Path(pattern_file).open('rb') as f:
+        data = PatternData.from_dict(json.load(f))
+else:
+    data = PatternData.from_dict(json.load(default_pattern_data()))
+
 
 patcher = Patcher(data, data_repo)
 
@@ -259,9 +266,9 @@ def on_open_brave_folder(window):
     chrome_dll_path = Path(window['chrome_dll'].get())
     try:
         if platform.system() == "Windows":
-            explorer_open_folder(chrome_dll_path.parent.parent)
+            open_folder_in_explorer(chrome_dll_path.parent.parent)
         else:
-            explorer_open_folder(chrome_dll_path.parent)
+            open_folder_in_explorer(chrome_dll_path.parent)
     except Exception as e:
         sg.popup_error(f"{e}", keep_on_top=True, modal=True)
 
@@ -269,7 +276,7 @@ def on_open_brave_folder(window):
 @event_handler("Open AppData Folder")
 def on_open_appdata_folder():
     try:
-        explorer_open_folder(data_repo.data_dir)
+        open_folder_in_explorer(data_repo.data_dir)
     except Exception as e:
         sg.popup_error(f"{e}", keep_on_top=True, modal=True)
 

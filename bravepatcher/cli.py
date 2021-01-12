@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import pprint
 import shutil
 import urllib.request
@@ -7,14 +10,29 @@ import typer
 
 from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
+from bravepatcher.pattern import PatternData
+from bravepatcher.static_data import default_pattern_data
 from bravepatcher.utils.brave import *
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
 
+def _get_pattern_data(file: Optional[Path] = None) -> PatternData:
+    if file is not None:
+        pattern_file = str(file.resolve())
+    else:
+        pattern_file = os.environ.get("BRAVE_PATTERN_FILE", "brave_patterns.json")
+    if Path(pattern_file).exists():
+        with Path(pattern_file).open('rb') as f:
+            data = PatternData.from_dict(json.load(f))
+    else:
+        data = PatternData.from_dict(json.load(default_pattern_data()))
+    return data
+
+
 @app.command(short_help="Download latest Brave version")
 def download_brave(name: Optional[str] = typer.Option(None, envvar="BRAVE_EXE_NAME", help="asset name"),
-                   rc: bool = typer.Option(False, envvar="BRAVE_ALLOW_RC", help="allow a release candidate asset"),
+                   rc: bool = typer.Option(False, envvar="BRAVE_ALLOW_RC", help="allow a newer release candidate"),
                    output: Optional[Path] = typer.Argument(None, writable=True,
                                                            help="path where the file will be downloaded into")):
     if name:
@@ -42,10 +60,7 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
           show_debug_result: bool = typer.Option(False, help="show internal patch result", envvar="BRAVE_DEBUG")
           ):
     data_repo = DataRepository()
-    if pattern_file is None:
-        pattern_file = Path("patterns_3372133802865133559.json")
-    with pattern_file.open() as f:
-        data = json.load(f)
+    data = _get_pattern_data(pattern_file)
     patcher = Patcher(data, data_repo)
     if chrome_dll is None:
         chrome_dll = find_chrome_dll(get_brave_path())
@@ -76,15 +91,13 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
 
 @app.command()
 def restore(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_okay=False, envvar="BRAVE_CHROME_DLL"),
+            pattern_file: Optional[Path] = typer.Option(None, exists=True, dir_okay=False, envvar='BRAVE_PATTERN_FILE'),
             kill_brave: bool = typer.Option(True, help="kill any brave processes")):
     data_repo = DataRepository()
-    pattern_file = Path("patterns_3372133802865133559.json")
-    with pattern_file.open() as f:
-        data = json.load(f)
+    data = _get_pattern_data(pattern_file)
     if chrome_dll is None:
         chrome_dll = find_chrome_dll(get_brave_path())
     patcher = Patcher(data, data_repo)
-
     if kill_brave and kill_all_brave(get_brave_for_chrome_dll(chrome_dll)):
         typer.echo("Killed brave process")
     patcher.restore_backup(chrome_dll)

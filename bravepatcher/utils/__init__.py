@@ -1,2 +1,2 @@
-from .subprocess import explorer_open_folder, check_call, check_output
+from .subprocess import open_folder_in_explorer, check_call, check_output
 from .DefaultJsonEncoder import DefaultJsonEncoder
