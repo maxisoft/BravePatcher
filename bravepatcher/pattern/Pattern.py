@@ -35,7 +35,7 @@ class Pattern:
                 if mapped is not marker:
                     yield mapped.encode()
                 elif sub.startswith('?'):
-                    yield b'.'
+                    yield b'.' # FIXME find a way to translate this case into a simple and performant regex
                 elif sub.endswith('?'):
                     base = int(sub[0], 16) * 16
                     yield b'[%b-%b]' % (
