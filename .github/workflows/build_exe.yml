@@ -52,7 +52,7 @@ jobs:
       shell: pwsh
 
     - name: Buid gui.exe using nuitka
-      run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico --windows-file-description="Patch Brave Browser" bravepatcher/gui.py
+      run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico --windows-file-description="Patch Brave Browser" --windows-disable-console bravepatcher/gui.py
 
     - name: Buid cli.exe using nuitka
       run: poetry run python -m nuitka --onefile --include-module=PySimpleGUI --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico bravepatcher/cli.py
