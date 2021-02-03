@@ -17,14 +17,15 @@ import PySimpleGUI as sg
 
 from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
-from bravepatcher.pattern import PatternData
+from bravepatcher.pattern import PatternData, PatternDownloader
+from bravepatcher.static_data import default_pattern_data
 from bravepatcher.utils import open_folder_in_explorer
 from bravepatcher.utils.brave import get_brave_path, find_chrome_dll, kill_all_brave, get_brave_for_chrome_dll
-from bravepatcher.static_data import default_pattern_data
 
 try:
-    chrome_dll = find_chrome_dll(get_brave_path())
+    chrome_dll = find_chrome_dll(get_brave_path()) or ""
 except OSError:
+    warnings.warn("Unable to gain access to brave dll")
     chrome_dll = ""
 
 data_repo = DataRepository()
@@ -35,7 +36,6 @@ if Path(pattern_file).exists():
         data = PatternData.from_dict(json.load(f))
 else:
     data = PatternData.from_dict(json.load(default_pattern_data()))
-
 
 patcher = Patcher(data, data_repo)
 
@@ -52,7 +52,7 @@ menu_def = [['File', ['Open Brave Folder', 'Open AppData Folder', 'Patch', 'Rest
             ['Tool', ['Start Brave', 'Stop Brave', 'Brave Update', ['Enable Updates', 'Disable Updates']]]]
 
 safe_menu_def = [['File', ['Open Brave Folder', 'Open AppData Folder']],
-                 ['Tool', ['Stop Brave', 'Brave Update', ['Enable Updates', 'Disable Updates']]]]
+                 ['Tool', ['Stop Brave']]]
 
 menu = sg.Menu(menu_def, key='menu')
 
@@ -227,7 +227,15 @@ def on_patch(window: sg.Window):
         try:
             if should_kill_brave:
                 kill_all_brave(get_brave_for_chrome_dll(chrome_dll_path))
-            patcher.patch(chrome_dll_path, patch_list)
+
+            downloader = PatternDownloader()
+            local_patcher = patcher
+            try:
+                latest_data = downloader.download_latest_version()
+                local_patcher = Patcher(latest_data, data_repo)
+            except Exception as e:
+                warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
+            local_patcher.patch(chrome_dll_path, patch_list)
         except Exception as e:
             update_status_text(f"✖ Failed to patch with exception {type(e).__name__}", text_color="orange")
             window.write_event_value("request_error_display", f"{e}")

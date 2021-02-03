@@ -10,7 +10,7 @@ import typer
 
 from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
-from bravepatcher.pattern import PatternData
+from bravepatcher.pattern import PatternData, PatternDownloader
 from bravepatcher.static_data import default_pattern_data
 from bravepatcher.utils.brave import *
 
@@ -28,6 +28,18 @@ def _get_pattern_data(file: Optional[Path] = None) -> PatternData:
     else:
         data = PatternData.from_dict(json.load(default_pattern_data()))
     return data
+
+
+def _find_chrome_dll_path() -> Path:
+    brave_path = get_brave_path()
+    if brave_path is None:
+        typer.echo("Unable to find brave", err=True)
+        raise typer.Exit(6)
+    chrome_dll = find_chrome_dll(brave_path)
+    if chrome_dll is None:
+        typer.echo("Unable to find chrome dll", err=True)
+        raise typer.Exit(6)
+    return chrome_dll
 
 
 @app.command(short_help="Download latest Brave version")
@@ -57,13 +69,22 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
           patch_show_notifications: bool = typer.Option(True,
                                                         help="no more ad notifications popup while your browser keep earning BAT"),
           pattern_file: Optional[Path] = typer.Option(None, exists=True, dir_okay=False, envvar='BRAVE_PATTERN_FILE'),
+          download_latest_pattern: bool = typer.Option(False,
+                                                       help="Download latest patch pattern json file from github"),
           show_debug_result: bool = typer.Option(False, help="show internal patch result", envvar="BRAVE_DEBUG")
           ):
     data_repo = DataRepository()
     data = _get_pattern_data(pattern_file)
+    if download_latest_pattern and not pattern_file:
+        downloader = PatternDownloader()
+        try:
+            data = downloader.download_latest_version()
+        except Exception as e:
+            warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
     patcher = Patcher(data, data_repo)
+
     if chrome_dll is None:
-        chrome_dll = find_chrome_dll(get_brave_path())
+        chrome_dll = _find_chrome_dll_path()
     patch_list = {
         "patch_is_focus_assist_enabled",
         "patch_should_show_notifications",
@@ -81,10 +102,10 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
     result = patcher.patch(chrome_dll, patch_list)
 
     if show_debug_result:
-        typer.echo_via_pager(pprint.pformat(result.to_json()))
+        typer.echo(pprint.pformat(result.to_json()))
     if result.errors:
         typer.echo("Patcher got errors. Use restore command or reinstall brave", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(10)
     else:
         typer.echo("Done patching brave")
 
@@ -96,7 +117,7 @@ def restore(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_o
     data_repo = DataRepository()
     data = _get_pattern_data(pattern_file)
     if chrome_dll is None:
-        chrome_dll = find_chrome_dll(get_brave_path())
+        chrome_dll = _find_chrome_dll_path()
     patcher = Patcher(data, data_repo)
     if kill_brave and kill_all_brave(get_brave_for_chrome_dll(chrome_dll)):
         typer.echo("Killed brave process")
