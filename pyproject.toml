@@ -18,6 +18,7 @@ bravepatcher = "bravepatcher.cli:main"
 
 [tool.poetry.dev-dependencies]
 PeachPy = { git = "https://github.com/Maratyszcza/PeachPy" }
+Nuitka = "0.6.11.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

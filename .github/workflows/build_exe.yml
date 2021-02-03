@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-python@v2
       timeout-minutes: 5
       with:
-        python-version: 3.8
+        python-version: 3.9
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
@@ -44,18 +44,18 @@ jobs:
             python -m poetry run python scripts/generate_static_data.py
             python -m poetry build
 
-    - name: Install nuitka & pyinstaller
-      run: poetry run python -m pip install nuitka pyinstaller pywin32
+    - name: Install pyinstaller
+      run: poetry run python -m pip install pyinstaller pywin32
 
     - name: Download brave.ico
       run: Invoke-WebRequest https://raw.githubusercontent.com/brave/brave-core/master/app/theme/brave/win/brave.ico -OutFile brave.ico
       shell: pwsh
 
     - name: Buid gui.exe using nuitka
-      run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico --windows-file-description="Patch Brave Browser" --windows-disable-console bravepatcher/gui.py
+      run: poetry run python -m nuitka --onefile --show-progress --show-modules --include-module=PySimpleGUI --plugin-enable=tk-inter --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico --windows-file-description="Patch Brave Browser" --windows-disable-console bravepatcher/gui.py
 
     - name: Buid cli.exe using nuitka
-      run: poetry run python -m nuitka --onefile --include-module=PySimpleGUI --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --recurse-all --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico bravepatcher/cli.py
+      run: poetry run python -m nuitka --onefile --include-module=PySimpleGUI --windows-company-name=Maxisoft --windows-product-version=0.1.0.0 --msvc=16.8 --follow-imports --assume-yes-for-downloads --windows-product-name=BravePatcherGui --windows-icon-from-ico=brave.ico bravepatcher/cli.py
 
     - name: Build exe using pyinstaller
       run: poetry run pyinstaller bravepatcher/gui.py
