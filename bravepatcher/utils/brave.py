@@ -47,22 +47,24 @@ if _is_windows:
             if res.exists():
                 return res
         warnings.warn("unable to find brave")
-        return Path()
+        return None
 
 
 else:
-    def get_brave_path() -> Path:
+    def get_brave_path() -> Optional[Path]:
         warnings.warn(f"platform {platform.system()} maybe unsupported")
         try:
             path = check_output("which brave")
             return Path(path)
         except:
             pass
-        return Path()
+        return None
 
 
-def find_chrome_dll(brave_path: Path) -> Path:
+def find_chrome_dll(brave_path: Optional[Path]) -> Optional[Path]:
     res = None
+    if brave_path is None:
+        return res
     for p in brave_path.parent.rglob("chrome.dll"):
         if res is not None:
             warnings.warn("found more than 1 chrome.dll")
