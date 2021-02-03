@@ -81,7 +81,7 @@ bool_funcs_by_string = {
 
 def gen_pattern(address, limit=500):
     """Naive Function Pattern Generator.
-    Extract the op code order
+    Extract the op codes in order
     """
     instr = getInstructionAt(address) or getInstructionContaining(address)
     ret = list()

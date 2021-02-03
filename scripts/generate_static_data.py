@@ -14,7 +14,7 @@ from zipfile import ZipFile, ZipInfo
 from peachpy.x86_64 import RET, XOR, rax, MOV
 from peachpy.x86_64.instructions import Instruction
 
-url = os.environ.get("PATTERN_URL", "https://github.com/maxisoft/BravePatcher/archive/pattern.zip")
+url = os.environ.get("BRAVE_PATTERN_URL", "https://github.com/maxisoft/BravePatcher/archive/pattern.zip")
 
 
 def import_template():

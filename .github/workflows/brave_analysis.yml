@@ -106,7 +106,7 @@ jobs:
         if: ${{ github.event_name != 'schedule' || env.ALREADY_ANALYSED != '1' }}
         run: |
           $env:EXTRACT_DIRECTORY = $((Get-Item "ProjectBrave").FullName)
-          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -noanalysis -overwrite -scriptPath "$((Get-Item .).FullName)" -postScript extract_functions_patterns.py
+          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -noanalysis -overwrite -scriptPath "$((Get-Item scripts).FullName)" -postScript extract_functions_patterns.py
         shell: pwsh
         timeout-minutes: 360
 
