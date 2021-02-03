@@ -58,21 +58,34 @@ class TestCliIntegration:
             pytest.skip("skipping CI only tests")
         _, _, code = _call_patcher("download-brave", cwd=str(tmp_path.resolve()))
         assert code == 0
+
         path = Path(tmp_path, "BraveBrowserStandaloneSilentSetup.exe")
         subprocess.check_call(str(path))
-        out, err, code = _call_patcher("patch --show_debug_result")
-        assert code == 0
+
+        out, err, code = _call_patcher("patch --download-latest-pattern --show-debug-result")
         print(out)
         print(err, file=sys.stderr)
+        assert "Done patching brave" in out
+        assert r"""'errors': []""" in out
+        assert code == 0
         from bravepatcher.utils.brave import get_brave_path
         with psutil.Popen([str(get_brave_path())] + shlex.split("--headless --bwsi")) as p:
-            # start and wait 30 sec hopping there's no crash
+            # start and wait 30 sec assuming there's no crash
             try:
                 p.wait(30)
             except subprocess.TimeoutExpired:
                 pass
             else:
                 assert p.returncode == 0
+            finally:
+                if p.is_running():
+                    p.kill()
+
+        out, err, code = _call_patcher("restore")
+        print(out)
+        print(err, file=sys.stderr)
+        assert code == 0
+
 
 
 
