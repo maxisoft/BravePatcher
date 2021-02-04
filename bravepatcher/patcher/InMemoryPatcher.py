@@ -1,14 +1,15 @@
 import re
 import traceback
-from io import BytesIO
-from typing import Iterable, Collection, Union, Tuple
 from dataclasses import asdict
+from io import BytesIO
+from typing import Iterable, Optional
 
+from ..pattern import Pattern, PatternData
+from ..static_data import X64InstructionsData
+from ..static_data import x64_instructions as default_x64_instructions
+from .exceptions import MemorySearchException, PatchError, PatchException
 from .MemorySearch import MemorySearch
-from .exceptions import *
-from .models import *
-from ..pattern import PatternData, Pattern
-from ..static_data import X64InstructionsData, x64_instructions as default_x64_instructions
+from .models import PatchedSegment, PatcherResult
 
 
 class InMemoryPatcher:
@@ -32,11 +33,11 @@ class InMemoryPatcher:
 
         segments = []
         errors = []
-        for i, patch_name in enumerate(patch_list):
+        for patch_name in patch_list:
             patch_function = getattr(self, patch_name)
             try:
-                l = patch_function(buff, content)
-                for e in l:
+                patch_result = patch_function(buff, content)
+                for e in patch_result:
                     if isinstance(e, PatchedSegment):
                         segments.append(e)
                     elif isinstance(e, PatchException):
@@ -62,7 +63,8 @@ class InMemoryPatcher:
             search = MemorySearch(content)
             return search.find_pattern(pattern)
         except MemorySearchException as e:
-            raise PatchException(PatchError(pattern_name, pattern.pattern, type(e).__name__, traceback.format_exc(limit=15)))
+            raise PatchException(
+                PatchError(pattern_name, pattern.pattern, type(e).__name__, traceback.format_exc(limit=15)))
 
     @staticmethod
     def _write_bytes(data: bytes, buff: BytesIO, match: re.Match, offset: int = 0):

@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
+import os
 import pprint
 import shutil
 import urllib.request
+import warnings
+from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
 
 import typer
@@ -12,7 +17,8 @@ from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
 from bravepatcher.pattern import PatternData, PatternDownloader
 from bravepatcher.static_data import default_pattern_data
-from bravepatcher.utils.brave import *
+from bravepatcher.utils.brave import get_brave_path, kill_all_brave, find_chrome_dll, get_brave_release_asset_url, \
+    get_brave_for_chrome_dll
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -59,15 +65,15 @@ def download_brave(name: Optional[str] = typer.Option(None, envvar="BRAVE_EXE_NA
     if output.is_dir():
         output = Path(output, name)
     with output.open('wb') as f:
-        with urllib.request.urlopen(url) as w:
+        with urllib.request.urlopen(url) as w:  # nosec
             shutil.copyfileobj(w, f)
 
 
 @app.command(short_help="patch Brave's chrome.dll")
 def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_okay=False, envvar="BRAVE_CHROME_DLL"),
           kill_brave: bool = typer.Option(True, help="kill any brave processes"),
-          patch_show_notifications: bool = typer.Option(True,
-                                                        help="no more ad notifications popup while your browser keep earning BAT"),
+          patch_show_notifications: bool = typer.Option(True, help="no more ad notifications popup while"
+                                                                   " your browser keep earning BAT"),
           pattern_file: Optional[Path] = typer.Option(None, exists=True, dir_okay=False, envvar='BRAVE_PATTERN_FILE'),
           download_latest_pattern: bool = typer.Option(False,
                                                        help="Download latest patch pattern json file from github"),

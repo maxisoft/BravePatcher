@@ -20,7 +20,8 @@ from bravepatcher.patcher import Patcher
 from bravepatcher.pattern import PatternData, PatternDownloader
 from bravepatcher.static_data import default_pattern_data
 from bravepatcher.utils import open_folder_in_explorer
-from bravepatcher.utils.brave import get_brave_path, find_chrome_dll, kill_all_brave, get_brave_for_chrome_dll
+from bravepatcher.utils.brave import (
+    find_chrome_dll, get_brave_for_chrome_dll, get_brave_path, kill_all_brave)
 
 try:
     chrome_dll = find_chrome_dll(get_brave_path()) or ""
@@ -41,7 +42,8 @@ patcher = Patcher(data, data_repo)
 
 chrome_dll_valid = sg.Text(" ", auto_size_text=True)
 chrome_dll_in = sg.In(chrome_dll, key="chrome_dll", enable_events=True)
-chrome_file_browse = sg.FileBrowse("Browse for chrome.dll", target=chrome_dll_in.Key, initial_folder=chrome_dll.parent,
+chrome_file_browse = sg.FileBrowse("Browse for chrome.dll", target=chrome_dll_in.Key,
+                                   initial_folder=Path(chrome_dll).parent,
                                    file_types=(("Chromium dll", "chrome.dll"), ("Any", "*")))
 ok_btn = sg.Button('Patch', disabled=not Path(chrome_dll).exists(), focus=True, bind_return_key=True)
 restore_btn = sg.Button('Restore', disabled=not patcher.has_backup(Path(chrome_dll)))
@@ -150,9 +152,12 @@ class EventHandlerHelper:
             warnings.warn(f"There's no handler for event {name}")
             return 0
         count = 0
-        for count, handler in enumerate(self.handlers[name]):
+        for count, handler in enumerate(self.handlers[name]):  # noqa: B007
             handler(event, values, window)
         return count
+
+
+event_handler_helper = EventHandlerHelper()
 
 
 def event_handler(name=None):
@@ -174,13 +179,10 @@ def event_handler(name=None):
                 p_dict.update(kwargs)
             return func(**p_dict)
 
-        event_handler.helper.register(name, wrapper)
+        event_handler_helper.register(name, wrapper)
         return wrapper
 
     return decorator
-
-
-event_handler.helper = EventHandlerHelper()
 
 
 def _update_status_text(window, text: str, **kwargs):
@@ -327,7 +329,7 @@ def main():
         if event in (sg.WIN_CLOSED, 'Cancel', 'Exit'):
             break
 
-        event_handler.helper.dispatch(event, event, values, window)
+        event_handler_helper.dispatch(event, event, values, window)
 
     executor.shutdown(True)
     window.close()

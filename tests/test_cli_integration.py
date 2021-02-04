@@ -53,7 +53,7 @@ class TestCliIntegration:
         assert pe.is_exe()
 
     @pytest.mark.slow_integration_test
-    def test_download_install_patch_run(self, tmp_path: Path):
+    def test_download_install_patch_run_restore(self, tmp_path: Path):
         if os.environ.get("CI") != "true":
             pytest.skip("skipping CI only tests")
         _, _, code = _call_patcher("download-brave", cwd=str(tmp_path.resolve()))

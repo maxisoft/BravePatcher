@@ -1,7 +1,8 @@
 import re
 
-from .exceptions import *
 from ..pattern.Pattern import Pattern
+from .exceptions import (MemorySearchNotFoundException,
+                         MemorySearchTooManyMatchException)
 
 
 class MemorySearch:

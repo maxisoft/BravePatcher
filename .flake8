@@ -1,0 +1,17 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    docs/source/conf.py,
+    test,
+    test,
+    build,
+    dist,
+    venv,
+    scripts,
+    bravepatcher/static_data_template.py
+max-line-length = 120
+per-file-ignores =
+    */__init__.py:I001 I005
+    bravepatcher\gui.py:I001 I005
+    bravepatcher\cli.py:I001 I005 B008

@@ -1,19 +1,20 @@
+# flake8: noqa
 from base64 import b64decode
-from dataclasses import *
+from dataclasses import dataclass
 from io import BytesIO
 from zlib import decompress
 
 _default_pattern_data = b"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"
 
+default_pattern_data_cache = None
+
 
 def default_pattern_data() -> BytesIO:
-    if default_pattern_data.cache is None:
+    global default_pattern_data_cache
+    if default_pattern_data_cache is None:
         data = b64decode(_default_pattern_data)
-        default_pattern_data.cache = decompress(data)
-    return BytesIO(default_pattern_data.cache)
-
-
-default_pattern_data.cache = None
+        default_pattern_data_cache = decompress(data)
+    return BytesIO(default_pattern_data_cache)
 
 
 @dataclass
@@ -22,5 +23,7 @@ class X64InstructionsData:
     return_1: bytes = b''
     return_0: bytes = b''
 
-x64_instructions = X64InstructionsData(return_nop=b'\xc3', return_1=b'H\xc7\xc0\x01\x00\x00\x00\xc3', return_0=b'H1\xc0\xc3')
+
+x64_instructions = X64InstructionsData(return_nop=b'\xc3', return_1=b'H\xc7\xc0\x01\x00\x00\x00\xc3',
+                                       return_0=b'H1\xc0\xc3')
 gen_date = '2020-12-29T21:42:00'

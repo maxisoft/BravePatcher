@@ -3,9 +3,10 @@ import json
 import os
 import platform
 import re
+import subprocess  # nosec
 import urllib.request
 import warnings
-from enum import auto, unique, Enum
+from enum import Enum, auto, unique
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -19,20 +20,18 @@ _is_windows = platform.system() == "Windows"
 if _is_windows:
     import winreg
 
-
     def _brave_reg(key=winreg.HKEY_CURRENT_USER) -> Optional[str]:
         try:
             with winreg.OpenKey(key, r"SOFTWARE\BraveSoftware\Update", 0, winreg.KEY_READ) as k:
                 p = Path(winreg.QueryValueEx(k, "path")[0])
                 if p.exists():
-                    return p.parent.parent / r"Brave-Browser\Application\brave.exe"
+                    return str(p.parent.parent / r"Brave-Browser\Application\brave.exe")
         except FileNotFoundError:
             pass
-
+        return None
 
     def _brave_default_install_folder(root="%LOCALAPPDATA%"):
         return os.path.expandvars(fr'{root}\BraveSoftware\Brave-Browser\Application\brave.exe')
-
 
     def get_brave_path() -> Optional[Path]:
         def gen():
@@ -49,14 +48,13 @@ if _is_windows:
         warnings.warn("unable to find brave")
         return None
 
-
 else:
     def get_brave_path() -> Optional[Path]:
         warnings.warn(f"platform {platform.system()} maybe unsupported")
         try:
             path = check_output("which brave")
             return Path(path)
-        except:
+        except subprocess.CalledProcessError:
             pass
         return None
 
@@ -117,9 +115,9 @@ _rc_regex = re.compile(r"^[\w\s.]+(RC\d+)\s*$", re.IGNORECASE)
 
 def _try_get_brave_release_asset_url(name: str, url: str, per_page: int, skip_rc=True) -> Optional[str]:
     url = url.format(per_page=per_page)
-    with urllib.request.urlopen(url) as f:
+    with urllib.request.urlopen(url) as f:  # nosec
         data = json.load(f)
-    empty = tuple()
+    empty: tuple = tuple()
 
     for release in sorted(data, key=lambda e: _parse_github_date(e['published_at']), reverse=True):
         if skip_rc and re.match(_rc_regex, release.get("name")):
@@ -128,6 +126,7 @@ def _try_get_brave_release_asset_url(name: str, url: str, per_page: int, skip_rc
         for asset in assets:
             if asset["name"] == name:
                 return asset['browser_download_url']
+    return None
 
 
 def get_brave_release_asset_url(name='BraveBrowserStandaloneSilentSetup.exe', url=_default_release_asset_url,

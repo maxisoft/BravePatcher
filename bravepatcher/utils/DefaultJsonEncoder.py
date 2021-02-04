@@ -1,7 +1,7 @@
 import base64
 import datetime
 import json
-from dataclasses import is_dataclass, asdict
+from dataclasses import asdict, is_dataclass
 from pathlib import Path, PurePath
 
 

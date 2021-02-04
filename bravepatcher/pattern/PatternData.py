@@ -1,6 +1,6 @@
 import datetime
 from dataclasses import dataclass, field
-from typing import Mapping, Pattern, Any
+from typing import Any, Mapping
 
 from .Pattern import Pattern
 

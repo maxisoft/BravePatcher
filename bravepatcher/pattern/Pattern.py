@@ -1,7 +1,7 @@
 import re
 import warnings
 from dataclasses import dataclass
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 
 @dataclass
@@ -30,12 +30,12 @@ class Pattern:
         def gen():
             mapping = {'??': '.', '*': '.*?'}
             marker = object()
-            for i, sub in enumerate(pattern.split(' ')):
+            for sub in pattern.split(' '):
                 mapped = mapping.get(sub, marker)
                 if mapped is not marker:
                     yield mapped.encode()
                 elif sub.startswith('?'):
-                    yield b'.' # FIXME find a way to translate this case into a simple and performant regex
+                    yield b'.'
                 elif sub.endswith('?'):
                     base = int(sub[0], 16) * 16
                     yield b'[%b-%b]' % (
@@ -43,5 +43,5 @@ class Pattern:
                 else:
                     yield re.escape(int(sub, 16).to_bytes(1, 'little'))
 
-        pattern = b''.join(gen())
-        return re.compile(pattern, re.DOTALL | re.ASCII)
+        pattern_tmp = b''.join(gen())
+        return re.compile(pattern_tmp, re.DOTALL | re.ASCII)

@@ -7,7 +7,7 @@ on:
     branches: [ main, dev ]
 
 jobs:
-  CI:
+  Unit_and_Integration_tests:
     runs-on: windows-latest
 
     steps:
@@ -28,14 +28,14 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Setup pip cache
+    - name: Setup pypoetry cache
       uses: actions/cache@v2
       timeout-minutes: 5
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
+        path: ~/AppData/Local/pypoetry/Cache
+        key: ${{ runner.os }}-pypoetry-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-pypoetry-
 
     - name: Install poetry & others
       run: python -m pip install poetry requests wheel
@@ -51,3 +51,53 @@ jobs:
 
     - name: Run pytest with slow integration
       run: python -m poetry run pytest -vv --with-slow-integration --integration-cover --cov-report term --cov=bravepatcher
+
+  flake8:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        timeout-minutes: 1
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        timeout-minutes: 5
+        with:
+          python-version: 3.9
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+        with:
+          vs-version: '16.8'
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup pypoetry cache
+        uses: actions/cache@v2
+        timeout-minutes: 5
+        with:
+          path: ~/AppData/Local/pypoetry/Cache
+          key: ${{ runner.os }}-pypoetry-${{ hashFiles('**/requirements.txt') }}${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pypoetry-
+
+      - name: Install poetry & others
+        run: python -m pip install poetry requests wheel
+
+      - name: Run Poetry
+        run: |
+          python -m poetry install
+          python -m poetry run python scripts/generate_static_data.py
+          python -m poetry build
+
+      - name: Run flake8
+        run: poetry run flake8 bravepatcher
+
+      - name: Run mypy
+        run: poetry run mypy bravepatcher
+
+      - name: Run bandit
+        run: poetry run bandit -r bravepatcher --ini .bandit -ll
+
+      - name: Run bandit (ignore nosec)
+        run: poetry run bandit -r bravepatcher --ini .bandit --ignore-nosec --exit-zero

@@ -6,12 +6,12 @@ import tarfile
 import tempfile
 from io import BytesIO, TextIOWrapper
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from ..DataRepository import DataRepository
-from .InMemoryPatcher import InMemoryPatcher
 from ..pattern import PatternData
 from ..utils.DefaultJsonEncoder import DefaultJsonEncoder
+from .InMemoryPatcher import InMemoryPatcher
 
 
 class Patcher:
