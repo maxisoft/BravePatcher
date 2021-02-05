@@ -231,12 +231,15 @@ def on_patch(window: sg.Window):
                 kill_all_brave(get_brave_for_chrome_dll(chrome_dll_path))
 
             downloader = PatternDownloader()
-            local_patcher = patcher
+            latest_data = data
             try:
-                latest_data = downloader.download_latest_version()
-                local_patcher = Patcher(latest_data, data_repo)
-            except Exception as e:
-                warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
+                latest_data = downloader.download_for_version(chrome_dll.parent.name)
+            except IOError:
+                try:
+                    latest_data = downloader.download_latest_version()
+                except Exception as e:
+                    warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
+            local_patcher = Patcher(latest_data, patcher.data_repo)
             local_patcher.patch(chrome_dll_path, patch_list)
         except Exception as e:
             update_status_text(f"✖ Failed to patch with exception {type(e).__name__}", text_color="orange")

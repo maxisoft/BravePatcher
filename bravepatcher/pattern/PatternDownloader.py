@@ -3,7 +3,7 @@ import os
 import shutil
 from io import BytesIO
 from pathlib import PurePath
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile, ZipInfo
 
@@ -11,7 +11,7 @@ from .PatternData import PatternData
 
 __all__ = ['PatternDownloader']
 
-_default_url = "https://github.com/maxisoft/BravePatcher/archive/pattern.zip"
+_default_url = os.environ.get("BRAVE_PATTERN_URL") or "https://github.com/maxisoft/BravePatcher/archive/pattern.zip"
 
 
 def _parse_version(version: str) -> Tuple[int, ...]:
@@ -28,8 +28,8 @@ def _compare_version_strings(left: str, right: str) -> Tuple[int, ...]:
 
 
 class PatternDownloader:
-    def __init__(self, url: Optional[str] = None):
-        self.url = url or os.environ.get("BRAVE_PATTERN_URL") or _default_url
+    def __init__(self, url: str = _default_url):
+        self.url = url
 
     def _download_pattern_data(self, cmp: Callable[[ZipInfo], Any]) -> PatternData:
         with urlopen(self.url, timeout=15) as remote:  # nosec
@@ -57,6 +57,6 @@ class PatternDownloader:
 
     def download_for_version(self, version: str) -> PatternData:
         def compare_key(zi: ZipInfo):
-            return *_compare_version_strings(PurePath(zi.filename).stem, version), zi.date_time
+            return *(-abs(i) for i in _compare_version_strings(PurePath(zi.filename).stem, version)), zi.date_time
 
         return self._download_pattern_data(compare_key)

@@ -62,7 +62,7 @@ class TestCliIntegration:
         path = Path(tmp_path, "BraveBrowserStandaloneSilentSetup.exe")
         subprocess.check_call(str(path))
 
-        out, err, code = _call_patcher("patch --download-latest-pattern --show-debug-result")
+        out, err, code = _call_patcher("patch --show-debug-result")
         print(out)
         print(err, file=sys.stderr)
         assert "Done patching brave" in out

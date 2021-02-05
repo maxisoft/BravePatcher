@@ -75,22 +75,34 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
           patch_show_notifications: bool = typer.Option(True, help="no more ad notifications popup while"
                                                                    " your browser keep earning BAT"),
           pattern_file: Optional[Path] = typer.Option(None, exists=True, dir_okay=False, envvar='BRAVE_PATTERN_FILE'),
-          download_latest_pattern: bool = typer.Option(False,
-                                                       help="Download latest patch pattern json file from github"),
+          download_latest_pattern: Optional[bool] = typer.Option(None, help="Download latest patch"
+                                                                            " pattern json file from github"),
           show_debug_result: bool = typer.Option(False, help="show internal patch result", envvar="BRAVE_DEBUG")
           ):
     data_repo = DataRepository()
     data = _get_pattern_data(pattern_file)
-    if download_latest_pattern and not pattern_file:
+
+    if chrome_dll is None:
+        chrome_dll = _find_chrome_dll_path()
+
+    if download_latest_pattern:
         downloader = PatternDownloader()
         try:
             data = downloader.download_latest_version()
         except Exception as e:
             warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
+    elif download_latest_pattern is None:
+        downloader = PatternDownloader()
+        if chrome_dll and chrome_dll.exists():
+            try:
+                data = downloader.download_for_version(chrome_dll.parent.name)
+            except IOError:
+                try:
+                    data = downloader.download_latest_version()
+                except Exception as e:
+                    warnings.warn(f"Unable to download latest patch version {type(e).__name__}")
     patcher = Patcher(data, data_repo)
 
-    if chrome_dll is None:
-        chrome_dll = _find_chrome_dll_path()
     patch_list = {
         "patch_is_focus_assist_enabled",
         "patch_should_show_notifications",
