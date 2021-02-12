@@ -115,7 +115,7 @@ def build_patch_option(window: sg.Window) -> set:
         patch_list |= {"patch_show_notification", "patch_initialize_toast_notifier"}
 
     if checked('disable_limitations'):
-        patch_list |= {"patch_should_allow", "patch_all_should_allow", "patch_should_exclude"}
+        patch_list |= {"patch_should_allow"}
 
     if checked('disable_pace'):
         patch_list |= {'patch_should_pace'}
@@ -233,7 +233,7 @@ def on_patch(window: sg.Window):
             downloader = PatternDownloader()
             latest_data = data
             try:
-                latest_data = downloader.download_for_version(chrome_dll.parent.name)
+                latest_data = downloader.download_best_match_for_version(chrome_dll.parent.name)
             except IOError:
                 try:
                     latest_data = downloader.download_latest_version()

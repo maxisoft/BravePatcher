@@ -55,7 +55,7 @@ class PatternDownloader:
 
         return self._download_pattern_data(compare_key)
 
-    def download_for_version(self, version: str) -> PatternData:
+    def download_best_match_for_version(self, version: str) -> PatternData:
         def compare_key(zi: ZipInfo):
             return *(-abs(i) for i in _compare_version_strings(PurePath(zi.filename).stem, version)), zi.date_time
 

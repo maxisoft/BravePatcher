@@ -95,7 +95,7 @@ def patch(chrome_dll: Optional[Path] = typer.Argument(None, exists=True, dir_oka
         downloader = PatternDownloader()
         if chrome_dll and chrome_dll.exists():
             try:
-                data = downloader.download_for_version(chrome_dll.parent.name)
+                data = downloader.download_best_match_for_version(chrome_dll.parent.name)
             except IOError:
                 try:
                     data = downloader.download_latest_version()
