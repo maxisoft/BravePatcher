@@ -21,7 +21,8 @@ from bravepatcher.pattern import PatternData, PatternDownloader
 from bravepatcher.static_data import default_pattern_data
 from bravepatcher.utils import open_folder_in_explorer
 from bravepatcher.utils.brave import (
-    find_chrome_dll, get_brave_for_chrome_dll, get_brave_path, kill_all_brave)
+    UpdateDisabler, find_chrome_dll, get_brave_for_chrome_dll, get_brave_path,
+    get_brave_updater_for_chrome_dll, kill_all_brave)
 
 try:
     chrome_dll = find_chrome_dll(get_brave_path()) or ""
@@ -309,6 +310,26 @@ def on_stop_brave(window):
     chrome_dll_path = Path(window['chrome_dll'].get())
     try:
         kill_all_brave(get_brave_for_chrome_dll(chrome_dll_path))
+    except Exception as e:
+        sg.popup_error(f"{e}", keep_on_top=True, modal=True)
+
+
+@event_handler("Enable Updates")
+def on_enable_updates(window):
+    chrome_dll_path = Path(window['chrome_dll'].get())
+    try:
+        updater_exe = get_brave_updater_for_chrome_dll(chrome_dll_path)
+        UpdateDisabler(updater_exe).enable_update()
+    except Exception as e:
+        sg.popup_error(f"{e}", keep_on_top=True, modal=True)
+
+
+@event_handler("Disable Updates")
+def on_disable_updates(window):
+    chrome_dll_path = Path(window['chrome_dll'].get())
+    try:
+        updater_exe = get_brave_updater_for_chrome_dll(chrome_dll_path)
+        UpdateDisabler(updater_exe).disable_update()
     except Exception as e:
         sg.popup_error(f"{e}", keep_on_top=True, modal=True)
 

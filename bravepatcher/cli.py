@@ -17,8 +17,9 @@ from bravepatcher.DataRepository import DataRepository
 from bravepatcher.patcher import Patcher
 from bravepatcher.pattern import PatternData, PatternDownloader
 from bravepatcher.static_data import default_pattern_data
-from bravepatcher.utils.brave import get_brave_path, kill_all_brave, find_chrome_dll, get_brave_release_asset_url, \
-    get_brave_for_chrome_dll
+from bravepatcher.utils.brave import (
+    find_chrome_dll, get_brave_for_chrome_dll, get_brave_path,
+    get_brave_release_asset_url, kill_all_brave)
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 

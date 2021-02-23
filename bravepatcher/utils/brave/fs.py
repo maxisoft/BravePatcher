@@ -63,8 +63,15 @@ def find_chrome_dll(brave_path: Optional[Path]) -> Optional[Path]:
     return res
 
 
-def get_brave_for_chrome_dll(chrome_dll_path: Path):
+def get_brave_for_chrome_dll(chrome_dll_path: Path) -> Path:
     if not _is_windows:
         return Path()
 
     return chrome_dll_path.parent.parent / "brave.exe"
+
+
+def get_brave_updater_for_chrome_dll(chrome_dll_path: Path) -> Path:
+    if not _is_windows:
+        return Path()
+
+    return chrome_dll_path.parent.parent.parent.parent / "Update" / "BraveUpdate.exe"

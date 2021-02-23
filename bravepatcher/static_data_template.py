@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from io import BytesIO
 from zlib import decompress
 
-
 _default_pattern_data = b"%PATTERN_PLACEHOLDER%"
 
 default_pattern_data_cache = None
