@@ -3,6 +3,7 @@ name: Build exe
 on:
   push:
     branches: [ main, dev ]
+    tags: ['v*']
 
 jobs:
   exe:
@@ -80,3 +81,48 @@ jobs:
       with:
         name: cli
         path: 'cli.exe'
+
+    - name: Create Release
+      id: create_release
+      if: ${{ github.ref }} && true
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: true
+        prerelease: false
+
+    - name: Upload GUI Release Asset
+      if: ${{ github.ref }} && true
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./gui.exe
+        asset_name: BravePatcher_gui.exe
+        asset_content_type: "application/octet-stream"
+
+    - name: Upload CLI Release Asset
+      if: ${{ github.ref }} && true
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./cli.exe
+        asset_name: BravePatcher_cli.exe
+        asset_content_type: "application/octet-stream"
+
+    - name: Upload WHL Release Asset
+      if: ${{ github.ref }} && true
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/bravepatcher-0.1.0-py3-none-any.whl
+        asset_name: bravepatcher-0.1.0-py3-none-any.whl
+        asset_content_type: "application/octet-stream"
