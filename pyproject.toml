@@ -7,7 +7,7 @@ readme = "README.md"
 authors = ["maxisoft <maxisoft.eu+github@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "<3.10,>=3.7"
+python = ">=3.7"
 PySimpleGUI = "<5, >=4.32.1"
 appdirs = ">=1.4.4"
 psutil = ">=5.8.0, <6.0.0"
