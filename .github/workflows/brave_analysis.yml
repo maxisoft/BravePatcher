@@ -106,12 +106,12 @@ jobs:
           name: ghidra_analysis
           path: ProjectBrave/
 
-      - name: Create brave dll artifact
+      - name: Create brave artifact
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: brave_dll
-          path: $env:BRAVE_DLL
+          name: brave
+          path: 'Brave*.exe'
 
   continue-analysis-windows-x64:
     runs-on: windows-latest
@@ -177,20 +177,29 @@ jobs:
           echo "BRAVE_MAJOR_VERSION=$mv" >> $env:GITHUB_ENV
         shell: pwsh
         timeout-minutes: 5
-
+        
+      - name: create ghidra working dir
+        run: |
+              New-Item -Path "ProjectBrave" -ItemType Directory -ErrorAction SilentlyContinue
+              $p = (Get-Item "ProjectBrave").FullName
+              echo "BRAVE_GHIDRA_WD=$p" >> $env:GITHUB_ENV
+        shell: pwsh
+        
       - uses: actions/download-artifact@v2
         with:
           name: ghidra_analysis
+          path: ${{ env.BRAVE_GHIDRA_WD }}
       
       - name: Display structure of downloaded files
         run: ls -R
         shell: pwsh
+        working-directory: ${{ env.BRAVE_GHIDRA_WD }}
 
       - name: Continue Ghidra Analysis
         if: ${{ github.event_name != 'schedule' || env.ALREADY_ANALYSED != '1' }}
         run: |
           $dll = (Get-Item $env:BRAVE_DLL).FullName
-          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -process chrome.dll -analysisTimeoutPerFile $(5 * 60 * 60) -max-cpu $($(Get-ComputerInfo -Property CsProcessors).CsProcessors.NumberOfCores)
+          ghidra/support/analyzeHeadless "$BRAVE_GHIDRA_WD" brave -process chrome.dll -analysisTimeoutPerFile $(5 * 60 * 60) -max-cpu $($(Get-ComputerInfo -Property CsProcessors).CsProcessors.NumberOfCores)
         shell: pwsh
         timeout-minutes: 350
 
