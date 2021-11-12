@@ -95,7 +95,7 @@ jobs:
           $dll = (Get-Item $env:BRAVE_DLL).FullName
           mkdir ProjectBrave
           $ProgressPreference = 'SilentlyContinue'
-          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -import "$dll" -analysisTimeoutPerFile $(1 * 60 * 60) -max-cpu $($(Get-ComputerInfo -Property CsProcessors).CsProcessors.NumberOfCores * 2) -overwrite
+          ghidra/support/analyzeHeadless "$((Get-Item ProjectBrave).FullName)" brave -import "$dll" -analysisTimeoutPerFile $(5 * 60 * 60) -max-cpu $($(Get-ComputerInfo -Property CsProcessors).CsProcessors.NumberOfCores * 2) -overwrite
         shell: pwsh
         timeout-minutes: 360
 
